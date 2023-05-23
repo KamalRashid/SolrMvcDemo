@@ -24,14 +24,14 @@
         <button type="button" class="btn btn-primary ml-2" onclick="performSearch()">Search</button>
     </div>
     <div class="input-group">
-        <div style="width:50%">
+        <div style="width:45%; margin-right:2rem">
             <!-- Label for the dropdown list -->
             <label for="genre" class="mr-2">Genre:</label>
 
             <!-- Dropdown list -->
             @Html.DropDownList("genre", genres, new { @class = "form-control mr-2"})
         </div>
-        <div style="width:50%">
+        <div style="width:45%">
             <!-- Label for the dropdown list -->
             <label for="year" class="mr-2">Year:</label>
 
