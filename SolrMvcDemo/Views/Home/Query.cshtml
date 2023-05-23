@@ -1,0 +1,19 @@
+﻿
+@{
+    ViewData["Title"] = "Query";
+    @model List<String>
+}
+
+
+<div>
+    <ul>
+        @foreach (var item in Model)
+        {
+            <li>
+                @Html.Raw(item)
+            </li>
+        }
+    </ul>
+</div>
+
+

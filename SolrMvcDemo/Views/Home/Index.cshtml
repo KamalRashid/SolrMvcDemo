@@ -1,0 +1,183 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+    var genres = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "None", Text = "None" },
+    };
+    var years = new List<SelectListItem>
+    {
+        new SelectListItem { Value = "None", Text = "None" },
+    };
+    
+}
+
+
+<div class="form-inline">
+    <div class="input-group">
+        <!-- Search box -->
+        <input type="text" id="query" class="form-control mr-2" oninput="Suggest()" />
+
+        <!-- Suggestions dropdown -->
+        <div id="suggestions" class="dropdown-menu" style="display: none; margin-left:5rem;margin-top:2.5rem"></div>
+
+        <!-- Search button -->
+        <button type="button" class="btn btn-primary ml-2" onclick="performSearch()">Search</button>
+    </div>
+    <div class="input-group">
+        <div style="width:50%">
+            <!-- Label for the dropdown list -->
+            <label for="genre" class="mr-2">Genre:</label>
+
+            <!-- Dropdown list -->
+            @Html.DropDownList("genre", genres, new { @class = "form-control mr-2"})
+        </div>
+        <div style="width:50%">
+            <!-- Label for the dropdown list -->
+            <label for="year" class="mr-2">Year:</label>
+
+            <!-- Dropdown list -->
+            @Html.DropDownList("year", years, new { @class = "form-control mr-2"})
+        </div>
+    </div>
+</div>
+
+
+<div id="searchResult"></div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<!-- Script to handle the search functionality -->
+<script>
+    GetFacets("genre");
+    GetFacets("initial_release_date");
+
+    function GetFacets(fieldType) {
+        console.log("---> " + fieldType);
+        $.ajax({
+            url: '/Home/Facet',
+            type: 'GET',
+            data: { field: fieldType },
+            success: function (response) {
+                console.log(response);
+                var Dropdown;
+                if (fieldType == "genre"){
+                    Dropdown = $("#genre");
+                }else{
+                    Dropdown = $("#year");
+                }
+
+                response.forEach(function (doc) {
+                    if (fieldType != "genre"){
+                        if(doc.key.length != 4){
+                            return;
+                        }
+                    }
+                    var option = $("<option>")
+                        .val(doc.key)
+                        .text(doc.key);
+                    Dropdown.append(option);
+                });
+            },
+            error: function (error) {
+                // Handle the error response
+                // Add your own error handling logic here
+                console.log(error);
+            }
+        });
+    }
+    function performSearch() {
+        $("#suggestions").hide();
+        event.preventDefault(); // Prevent the default form submission
+
+        //var searchTerm = $("#searchby").val();
+        var query = [];
+        query.push($("#query").val());
+        query.push($("#genre").val());
+        query.push($("#year").val());
+        var queryString = query.join(',');
+        // Call the function in the home controller and pass the query as parameters
+        // console.log(query);
+        $.ajax({
+            url: '/Home/Query',
+            type: 'GET',
+            data: { q: queryString },
+            success: function (res) {
+                var result = "";
+                //console.log(res);
+                var response = res.response.docs;
+                //console.log(response);
+                // loop through the response data and build the result string
+                // Check if the response is an array and has a length
+                if (Array.isArray(response) && response.length > 0) {
+                    // Loop through the response array and build the result string
+                    response.forEach(function (doc) {
+                        result += "<h2>" + doc.name + "</h2>";
+                        result += "<p><strong>Directed by:</strong> " + doc.directed_by.join(", ") + "</p>";
+                        result += "<p><strong>Initial release date:</strong> " + doc.initial_release_date + "</p>";
+                        result += "<p><strong>Genre:</strong> " + doc.genre.join(", ") + "</p>";
+                        result += "<hr />";
+                    });
+                } else {
+                    result = "<p><strong>No results found.</strong></p>";
+                }
+
+                // update the HTML content of an element with the result
+                $("#searchResult").html(result);
+                
+            },
+            error: function (error) {
+                // Handle the error response
+                // Add your own error handling logic here
+                console.log(error);
+            }
+        });
+    }
+
+    function Suggest() {
+        var query = $("#query").val();
+        $.ajax({
+            url: '/Home/Suggest',
+            type: 'GET',
+            data: { q: query },
+            success: function (response) {
+                //console.log(response);
+
+                // Get the suggestions container element
+                var suggestionsContainer = $("#suggestions");
+
+                // Clear previous suggestions
+                suggestionsContainer.empty();
+                
+                    var suggestions = response.suggest.mySuggester[query];
+
+                    if (suggestions.numFound > 0) {
+                        // Populate the suggestions
+                        suggestions.suggestions.forEach(function (suggestion) {
+                            var suggestionLink = $("<a>")
+                                .attr("href", "#")
+                                .addClass("dropdown-item")
+                                .text(suggestion.term)
+                                .click(function () {
+                                    // Set the query text to the clicked suggestion
+                                    $("#query").val(suggestion.term);
+                                    suggestionsContainer.hide();    
+                                    // Call the performSearch() function
+                                    performSearch();
+                                });
+
+                            // Append the suggestion link to the suggestions container
+                            suggestionsContainer.append(suggestionLink);
+                        });
+                    }
+                
+
+                // Display the suggestions dropdown
+                suggestionsContainer.show();
+            },
+            error: function (error) {
+                // Handle the error response
+                // Add your own error handling logic here
+                console.log(error);
+            }
+        });
+    }
+</script>
